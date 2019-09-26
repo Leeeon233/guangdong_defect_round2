@@ -3,4 +3,4 @@ MAINTAINER leonzhao
 ADD . /competition
 WORKDIR /competition
 RUN pip --no-cache-dir install  -r requirements.txt
-CMD ["sh", "run.sh"]
+#CMD ["sh", "run.sh"]
