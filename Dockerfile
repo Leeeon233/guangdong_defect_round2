@@ -4,4 +4,5 @@ ADD . /competition
 WORKDIR /competition
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip --no-cache-dir install  -r requirements.txt
-#CMD ["sh", "run.sh"]
+RUN pip install --no-cache-dir -e mmdetection/.
+CMD ["sh", "run.sh"]
