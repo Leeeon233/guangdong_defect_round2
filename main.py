@@ -11,5 +11,6 @@ for dir_name in os.listdir(root):
             res = detector.detect_single_img(os.path.join(root, dir_name, file))
             result += res
 
+
 with open('result.json', 'w') as fp:
     json.dump(result, fp, indent=4, separators=(',', ': '))
