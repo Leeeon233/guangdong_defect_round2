@@ -4,7 +4,7 @@ import json
 
 class Detector:
     def __init__(self):
-        self.model = init_detector('myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2.py', '/competition/epoch_12.pth', device='cuda:0')
+        self.model = init_detector('/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2.py', '/competition/epoch_12.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
