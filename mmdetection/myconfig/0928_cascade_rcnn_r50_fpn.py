@@ -1,4 +1,3 @@
-# model settings
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
@@ -242,4 +241,3 @@ load_from = 'checkpoints/cascade_rcnn_r50_fpn_1x_coco_pretrained_16_classes.pth'
 # load_from = 'checkpoints/cascade_rcnn_r50_fpn_1x_20190501-3b6211ab.pth' #采用coco预训练模型 ,需要对权重类别数进行处理
 resume_from = None
 workflow = [('train', 1)]
-#
