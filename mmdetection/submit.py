@@ -6,7 +6,7 @@ import cv2
 
 
 def main():
-    config_file = '/competition/mmdetection/myconfigs/0928_cascade_rcnn_r50_fpn.py'  # 修改成自己的配置文件
+    config_file = '/competition/mmdetection/myconfig/0928_cascade_rcnn_r50_fpn.py'  # 修改成自己的配置文件
     checkpoint_file = '/competition/epoch_16.pth'  # 修改成自己的训练权重
     test_path = '/tcdata/guangdong1_round2_testA_20190924'  # 官方测试集图片路径
 
