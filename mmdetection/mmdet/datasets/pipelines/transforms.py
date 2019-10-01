@@ -852,8 +852,7 @@ class RandomFlipImages(object):
             results['flip'] = flip
         if results['flip']:
             # flip image
-            results['img'][0] = mmcv.imflip(results['img'][0])
-            results['img'][1] = mmcv.imflip(results['img'][1])
+            results['img'] = [mmcv.imflip(results['img'][0]), mmcv.imflip(results['img'][1])]
             # results['template_img'] = mmcv.imflip(results['template_img'])
             # flip bboxes
             for key in results.get('bbox_fields', []):

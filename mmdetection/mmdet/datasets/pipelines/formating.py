@@ -67,7 +67,9 @@ class ImagesToTensor(object):
 
     def __call__(self, results):
         for key in self.keys:
-            results[key] = [to_tensor(results[key][0].transpose(2, 0, 1)), to_tensor(results[key][1].transpose(2, 0, 1))]
+            if key == 'img':
+                results[key] = torch.cat([to_tensor(results[key][0].transpose(2, 0, 1)).unsqueeze(0),
+                                          to_tensor(results[key][1].transpose(2, 0, 1)).unsqueeze(0)])
         return results
 
     def __repr__(self):
@@ -163,9 +165,10 @@ class DefaultFormatBundleImages(object):
 
     def __call__(self, results):
         if 'img' in results:
-            img = np.ascontiguousarray(results['img'][0].transpose(2, 0, 1))
-            template_img = np.ascontiguousarray(results['img'][1].transpose(2, 0, 1))
-            results['img'] = [DC(to_tensor(img), stack=True), DC(to_tensor(template_img), stack=True)]
+            img = to_tensor(np.ascontiguousarray(results['img'][0].transpose(2, 0, 1))).unsqueeze(0)
+            template_img = to_tensor(np.ascontiguousarray(results['img'][1].transpose(2, 0, 1))).unsqueeze(0)
+            img = torch.cat([img, template_img])
+            results['img'] = DC(to_tensor(img), stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
             if key not in results:
                 continue

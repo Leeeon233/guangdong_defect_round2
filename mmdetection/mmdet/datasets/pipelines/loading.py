@@ -34,19 +34,22 @@ class LoadImageFromFile(object):
 @PIPELINES.register_module
 class LoadImagesFromFile(object):
 
-    def __init__(self, to_float32=False):
+    def __init__(self, size, to_float32=False):
         self.to_float32 = to_float32
+        self.size = size
 
     def __call__(self, results):
         filename = osp.join(results['img_prefix'],
                             results['img_info']['filename'].split(' ')[0])
         img = mmcv.imread(filename)
+        # img = mmcv.imresize(img, self.size)
         if self.to_float32:
             img = img.astype(np.float32)
 
         template_filename = osp.join(results['img_prefix'],
                                      results['img_info']['filename'].split(' ')[1])
         template_img = mmcv.imread(template_filename)
+        # template_img = mmcv.imresize(template_img, self.size)
         if self.to_float32:
             template_img = template_img.astype(np.float32)
 

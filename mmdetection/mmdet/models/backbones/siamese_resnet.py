@@ -1,11 +1,13 @@
 import logging
 
 import torch.nn as nn
+import torch
+
 import torch.utils.checkpoint as cp
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
-
+import torch.nn.functional as F
 from mmdet.models.plugins import GeneralizedAttention
 from mmdet.ops import ContextBlock, DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
@@ -380,7 +382,8 @@ class SiameseResNet(nn.Module):
                  gen_attention=None,
                  stage_with_gen_attention=((), (), (), ()),
                  with_cp=False,
-                 zero_init_residual=True):
+                 zero_init_residual=True,
+                 with_stn=False):
         super(SiameseResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
@@ -420,7 +423,7 @@ class SiameseResNet(nn.Module):
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
-            planes = 64 * 2**i
+            planes = 64 * 2 ** i
             res_layer = make_res_layer(
                 self.block,
                 self.inplanes,
@@ -443,8 +446,34 @@ class SiameseResNet(nn.Module):
 
         self._freeze_stages()
 
-        self.feat_dim = self.block.expansion * 64 * 2**(
-            len(self.stage_blocks) - 1)
+        self.feat_dim = self.block.expansion * 64 * 2 ** (
+                len(self.stage_blocks) - 1)
+
+        self.with_stn = with_stn
+        if with_stn:
+            # Spatial transformer localization-network
+            self.localization = nn.Sequential(
+                nn.Conv2d(6, 32, kernel_size=7),
+                nn.MaxPool2d(2, stride=2),
+                nn.ReLU(True),
+                nn.Conv2d(32, 32, kernel_size=5),
+                nn.MaxPool2d(2, stride=2),
+                nn.ReLU(True)
+            )
+
+            self.affine_in = 32 * 164 * 372
+
+            # Regressor for the 3 * 2 affine matrix
+            self.fc_loc = nn.Sequential(
+                nn.Linear(self.affine_in, 64),
+                nn.ReLU(True),
+                nn.Linear(64, 2 * 3)
+            )
+
+            # Initialize the weights/bias with identity transformation
+            self.fc_loc[2].weight.data.fill_(0)
+            self.fc_loc[2].bias.data = torch.FloatTensor([1, 0, 0,
+                                                          0, 1, 0,])
 
     @property
     def norm1(self):
@@ -503,9 +532,25 @@ class SiameseResNet(nn.Module):
         else:
             raise TypeError('pretrained must be a str or None')
 
-    def forward(self, x):
-        x2 = x[1]
-        x = x[0]
+    def stn(self, x, x2):
+        x = torch.cat([x, x2], dim=1)
+        # print(x.size())
+        xs = self.localization(x)
+        # print(xs.size())
+        xs = xs.view(-1, self.affine_in)
+        theta = self.fc_loc(xs)
+        theta = theta.view(-1, 2, 3)
+
+        grid = F.affine_grid(theta, x2.size())
+        x2 = F.grid_sample(x2, grid)
+
+        return x2
+
+    def forward(self, _x):
+        x = _x[:, 0, :]
+        x2 = _x[:, 1, :]
+        if self.with_stn:
+            x2 = self.stn(x, x2)
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)

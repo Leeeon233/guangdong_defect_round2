@@ -6,7 +6,7 @@ from .registry import DATASETS
 
 
 @DATASETS.register_module
-class CocoDataset(CustomDataset):
+class SiameseDataset(CustomDataset):
 
     CLASSES = ('zhanwu', 'cuohua', 'shuiyin', 'huamao', 'fengtou', 'fengtouyin', 'chongzhan',
     'podong', 'zhezi', 'zhici', 'louyin', 'laban', 'secha', 'wangzhe', 'others')
@@ -23,9 +23,9 @@ class CocoDataset(CustomDataset):
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
             info['filename'] = info['file_name']
-            filename, template_filename = info['filename'].split(' ')
-            info['filename'] = filename
-            info['template_filename'] = template_filename
+            # filename, template_filename = info['filename'].split(' ')
+            # info['filename'] = filename
+            # info['template_filename'] = template_filename
             img_infos.append(info)
         return img_infos
 

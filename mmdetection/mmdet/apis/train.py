@@ -35,10 +35,22 @@ def parse_losses(losses):
 
 
 def batch_processor(model, data, train_mode):
+    # if isinstance(data['img'], list):
+    #     from mmcv.parallel import DataContainer as DC
+    #     ori_imgs = data['img'][0].data[0]
+    #     batch_num, _, h, w = ori_imgs.size()
+    #     template_imgs = data['img'][1].data[0]
+    #     ori_imgs = ori_imgs.view(batch_num, 1, 3, w, h)
+    #     template_imgs = template_imgs.view(batch_num, 1, 3, w, h)
+    #     img = torch.cat([ori_imgs, template_imgs], dim=1)
+    #     # print('img size ', img.size())
+    #     data['img'] = DC(img)
+
+
+
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
-    if isinstance(data['img'], list):
-        data['img'] = data['img'][0]
+
     outputs = dict(
         loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
 

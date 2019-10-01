@@ -9,6 +9,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        with_stn=False,
         style='pytorch',
         dcn=dict(
             modulated=False, deformable_groups=1, fallback_on_stride=False),
@@ -162,13 +163,13 @@ test_cfg = dict(
     keep_all_stages=False)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/shared_disk/zhaoliang/datasets/guangdong_round2/siamese_coco/'
+data_root = '/shared_disk/hannah/datasets/guangdong_round2/process/siamese_coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImagesFromFile'),
+    dict(type='LoadImagesFromFile', size=(4092, 1800)),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='ResizeImages', img_scale=(1280, 562), keep_ratio=True),
+    dict(type='ResizeImages', img_scale=(1920, 844), keep_ratio=True),
     dict(type='RandomFlipImages', flip_ratio=0.5),
     dict(type='NormalizeImages', **img_norm_cfg),
     dict(type='PadImages', size_divisor=32),
@@ -176,10 +177,10 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
-    dict(type='LoadImagesFromFile'),
+    dict(type='LoadImagesFromFile', size=(4092, 1800)),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1280, 562),
+        img_scale=(1920, 844),
         flip=False,
         transforms=[
             dict(type='ResizeImages', keep_ratio=True),
@@ -191,7 +192,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
+    imgs_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -231,7 +232,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2'
-load_from = None#'/home/zhaoliang/project/build_model/mmdetection/cascade_rcnn_dconv_c3-c5_r50_fpn_weights_classes_16.pth'
-resume_from = None# '/home/zhaoliang/project/build_model/mmdetection/work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2/epoch_1.pth'
+work_dir = './work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_stn'
+load_from = '/home/zhaoliang/project/mmdetection/cascade_rcnn_dconv_c3-c5_r50_fpn_weights_classes_16.pth'
+resume_from = None#'/home/zhaoliang/project/build_model/mmdetection/work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_stn/epoch_2.pth'
 workflow = [('train', 1)]

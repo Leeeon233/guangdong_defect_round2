@@ -2,14 +2,15 @@
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
-    # pretrained='torchvision://resnet50',
+    # pretrained='torchvision://resnet101',
     backbone=dict(
         type='SiameseResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch',
+        with_stn=True,
         dcn=dict(
             modulated=False, deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
@@ -162,13 +163,13 @@ test_cfg = dict(
     keep_all_stages=False)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/shared_disk/zhaoliang/datasets/guangdong_round2/siamese_coco/'
+data_root = '/shared_disk/hannah/datasets/guangdong_round2/process/siamese_coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImagesFromFile'),
+    dict(type='LoadImagesFromFile', size=(4092, 1800)),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='ResizeImages', img_scale=(1280, 562), keep_ratio=True),
+    dict(type='ResizeImages', img_scale=(1500, 660), keep_ratio=False),
     dict(type='RandomFlipImages', flip_ratio=0.5),
     dict(type='NormalizeImages', **img_norm_cfg),
     dict(type='PadImages', size_divisor=32),
@@ -176,13 +177,13 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
-    dict(type='LoadImagesFromFile'),
+    dict(type='LoadImagesFromFile', size=(4092, 1800)),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1280, 562),
+        img_scale=(1500, 660),
         flip=False,
         transforms=[
-            dict(type='ResizeImages', keep_ratio=True),
+            dict(type='ResizeImages', keep_ratio=False),
             dict(type='RandomFlipImages'),
             dict(type='NormalizeImages', **img_norm_cfg),
             dict(type='PadImages', size_divisor=32),
@@ -191,7 +192,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
+    imgs_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -209,6 +210,7 @@ data = dict(
         img_prefix=data_root + 'images/val/',
         pipeline=test_pipeline))
 # optimizer
+# optimizer = dict(type='Adam')
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
@@ -217,7 +219,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[8, 11])
+    step=[8, 11, 20])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -228,10 +230,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 28
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2'
-load_from = None#'/home/zhaoliang/project/build_model/mmdetection/cascade_rcnn_dconv_c3-c5_r50_fpn_weights_classes_16.pth'
-resume_from = None# '/home/zhaoliang/project/build_model/mmdetection/work_dirs/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2/epoch_1.pth'
+work_dir = './work_dirs/cascade_rcnn_dconv_c3-c5_r101_fpn_1x_round2'
+load_from = '/home/zhaoliang/project/build_model/mmdetection/cascade_rcnn_dconv_c3-c5_r101_fpn_weights_classes_16.pth'
+resume_from = '/home/zhaoliang/project/build_model/mmdetection/work_dirs/cascade_rcnn_dconv_c3-c5_r101_fpn_1x_round2/epoch_16.pth'
 workflow = [('train', 1)]

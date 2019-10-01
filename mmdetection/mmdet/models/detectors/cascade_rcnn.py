@@ -157,6 +157,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+
         x = self.extract_feat(img)
 
         losses = dict()
