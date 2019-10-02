@@ -34,9 +34,8 @@ class LoadImageFromFile(object):
 @PIPELINES.register_module
 class LoadImagesFromFile(object):
 
-    def __init__(self, size, to_float32=False):
+    def __init__(self, to_float32=False):
         self.to_float32 = to_float32
-        self.size = size
 
     def __call__(self, results):
         filename = osp.join(results['img_prefix'],

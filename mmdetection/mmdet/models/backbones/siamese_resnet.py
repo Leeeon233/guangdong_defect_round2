@@ -461,7 +461,7 @@ class SiameseResNet(nn.Module):
                 nn.ReLU(True)
             )
 
-            self.affine_in = 32 * 164 * 372
+            self.affine_in = 32 * 172 * 396
 
             # Regressor for the 3 * 2 affine matrix
             self.fc_loc = nn.Sequential(
@@ -551,6 +551,9 @@ class SiameseResNet(nn.Module):
         x2 = _x[:, 1, :]
         if self.with_stn:
             x2 = self.stn(x, x2)
+            # x = self.stn(x_t, x)
+        # else:
+        #     x2 = x_t
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)
