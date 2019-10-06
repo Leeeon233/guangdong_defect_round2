@@ -19,8 +19,9 @@ class Detector:
                 for bbox in bboxes:
                     x1, y1, x2, y2, score = bbox.tolist()
                     x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
-                    result.append(
-                        {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
+                    if score > 0.2:
+                        result.append(
+                            {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
 
         return result
 
