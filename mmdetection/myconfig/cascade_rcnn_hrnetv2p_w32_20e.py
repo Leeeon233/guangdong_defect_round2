@@ -171,7 +171,7 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100),
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=150),
     keep_all_stages=False)
 # dataset settings
 dataset_type = 'CocoDataset'
@@ -181,7 +181,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImagesFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='ResizeImages', img_scale=(2048, 900), keep_ratio=True),
+    dict(type='ResizeImages', img_scale=(1600, 703), keep_ratio=True),
     dict(type='RandomFlipImages', flip_ratio=0.5),
     dict(type='NormalizeImages', **img_norm_cfg),
     dict(type='PadImages', size_divisor=32),
@@ -192,7 +192,7 @@ test_pipeline = [
     dict(type='LoadImagesFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(2048, 900),
+        img_scale=(1600, 703),
         flip=False,
         transforms=[
             dict(type='ResizeImages', keep_ratio=True),
@@ -204,7 +204,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=1,
+    imgs_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -222,7 +222,7 @@ data = dict(
         img_prefix=data_root + 'images/val/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.002, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -230,7 +230,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[16, 19])
+    step=[14, 16])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -245,6 +245,6 @@ total_epochs = 20
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/cascade_rcnn_hrnetv2p_w32'
-load_from = None #'/home/zhaoliang/project/build_model/mmdetection/cascade_rcnn_hrnetv2p_w32_20e_classes_16.pth'
+load_from = '/home/zhaoliang/project/build_model/mmdetection/cascade_rcnn_hrnetv2p_w32_20e_classes_16.pth'
 resume_from = '/home/zhaoliang/project/build_model/mmdetection/work_dirs/cascade_rcnn_hrnetv2p_w32/epoch_13.pth'
 workflow = [('train', 1)]

@@ -449,23 +449,24 @@ class SiameseHRNet(nn.Module):
         x = self.relu(x)
         x = self.conv2(x)
         x = self.norm2(x)
-        x = self.relu(x)
-        x = self.layer1(x)
+        # x = self.relu(x)
 
         x2 = self.conv1(x2)
         x2 = self.norm1(x2)
         x2 = self.relu(x2)
         x2 = self.conv2(x2)
         x2 = self.norm2(x2)
-        x2 = self.relu(x2)
-        x2 = self.layer1(x2)
+        # x2 = self.relu(x2)
+
+        x = self.layer1(self.relu(x - x2))
+
 
         x_list = []
         for i in range(self.stage2_cfg['num_branches']):
             if self.transition1[i] is not None:
-                x_list.append(self.transition1[i](x-x2))
+                x_list.append(self.transition1[i](x))
             else:
-                x_list.append(x-x2)
+                x_list.append(x)
         y_list = self.stage2(x_list)
 
         x_list = []
@@ -483,6 +484,7 @@ class SiameseHRNet(nn.Module):
             else:
                 x_list.append(y_list[i])
         y_list = self.stage4(x_list)
+
 
         return y_list
 
