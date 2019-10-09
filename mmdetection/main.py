@@ -7,7 +7,7 @@ class Detector:
     def __init__(self):
         self.model = init_detector(
             '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug.py',
-            '/competition/epoch_2.pth', device='cuda:0')
+            '/competition/epoch_1.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -24,7 +24,7 @@ class Detector:
                     scores.append(score)
                     rs.append(
                         {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-            if len(scores) > 0 and max(scores) > 0.01:
+            if len(scores) > 0 and max(scores) > 0.05:
                 result += rs
         return result
 
