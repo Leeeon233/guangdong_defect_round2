@@ -6,8 +6,8 @@ import json
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug2.py',
-            '/competition/epoch_12.pth', device='cuda:0')
+            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug.py',
+            '/competition/epoch_1.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -33,6 +33,7 @@ root = '/tcdata/guangdong1_round2_testA_20190924'
 result = []
 detector = Detector()
 from collections import defaultdict
+
 tmp = defaultdict(int)
 for dir_name in os.listdir(root):
     files = os.listdir(os.path.join(root, dir_name))
@@ -40,7 +41,7 @@ for dir_name in os.listdir(root):
         files = [files[1], files[0]]
     file = files[0]
     template_file = files[1]
-    tmp[template_file]+=1
+    tmp[template_file] += 1
     res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
     result += res
 print(tmp)
