@@ -1,4 +1,4 @@
-FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:finetune
+FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:50lrelu
 MAINTAINER leonzhao
 ADD . /competition
 WORKDIR /competition
