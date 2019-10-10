@@ -34,16 +34,15 @@ result = []
 detector = Detector()
 from collections import defaultdict
 
-tmp = defaultdict(int)
+
 for dir_name in os.listdir(root):
     files = os.listdir(os.path.join(root, dir_name))
     if files[0].startswith('template'):
         files = [files[1], files[0]]
     file = files[0]
     template_file = files[1]
-    tmp[template_file] += 1
     res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
     result += res
-print(tmp)
+
 with open('result.json', 'w') as fp:
     json.dump(result, fp, indent=4, separators=(',', ': '))
