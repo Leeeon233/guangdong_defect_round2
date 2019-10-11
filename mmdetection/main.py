@@ -25,7 +25,7 @@ class Detector:
                     rs.append(
                         {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
             if len(scores) > 0 and max(scores) > 0.01:
-                if len(scores) == 1 and max(scores) < 0.2:
+                if len(scores) == 1 and max(scores) < 0.05:
                     continue
                 result += rs
         return result
