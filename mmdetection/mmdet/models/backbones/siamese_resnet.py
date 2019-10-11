@@ -196,7 +196,6 @@ class Bottleneck(nn.Module):
         self.add_module(self.norm3_name, norm3)
 
         self.relu = nn.ReLU(inplace=True)
-        self.lrelu = nn.LeakyReLU(inplace=True)
         self.downsample = downsample
 
         if self.with_gcb:
@@ -264,7 +263,7 @@ class Bottleneck(nn.Module):
         else:
             out = _inner_forward(x)
 
-        out = self.lrelu(out)
+        out = self.relu(out)
 
         return out
 
