@@ -12,7 +12,7 @@ from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
 from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
-
+from ranger import Ranger
 
 def parse_losses(losses):
     log_vars = OrderedDict()
@@ -103,6 +103,8 @@ def build_optimizer(model, optimizer_cfg):
     paramwise_options = optimizer_cfg.pop('paramwise_options', None)
     # if no paramwise option is specified, just use the global setting
     if paramwise_options is None:
+        if optimizer_cfg['type'] == 'ranger':
+            return Ranger(model.parameters(), optimizer_cfg['lr'])
         return obj_from_dict(optimizer_cfg, torch.optim,
                              dict(params=model.parameters()))
     else:
@@ -142,8 +144,10 @@ def build_optimizer(model, optimizer_cfg):
             # otherwise use the global settings
 
             params.append(param_group)
-
+        if optimizer_cfg['type'] == 'ranger':
+            return Ranger(params, optimizer_cfg['lr'])
         optimizer_cls = getattr(torch.optim, optimizer_cfg.pop('type'))
+
         return optimizer_cls(params, **optimizer_cfg)
 
 
@@ -159,6 +163,10 @@ def _dist_train(model, dataset, cfg, validate=False):
     model = MMDistributedDataParallel(model.cuda())
 
     # build runner
+    # if hasattr(model, 'module'):
+    #     _model = model.module
+    # else:
+    #     _model = model
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)

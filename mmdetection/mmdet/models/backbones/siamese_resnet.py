@@ -85,6 +85,24 @@ class BasicBlock(nn.Module):
         return out
 
 
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -95,6 +113,7 @@ class Bottleneck(nn.Module):
                  dilation=1,
                  downsample=None,
                  style='pytorch',
+                 with_se=False,
                  with_cp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
@@ -117,6 +136,7 @@ class Bottleneck(nn.Module):
         self.dilation = dilation
         self.style = style
         self.with_cp = with_cp
+        self.with_se = with_se
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.dcn = dcn
@@ -137,6 +157,8 @@ class Bottleneck(nn.Module):
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
             norm_cfg, planes * self.expansion, postfix=3)
+        if with_se:
+            self.se = SELayer(planes * self.expansion, 16)
 
         self.conv1 = build_conv_layer(
             conv_cfg,
@@ -247,6 +269,8 @@ class Bottleneck(nn.Module):
 
             out = self.conv3(out)
             out = self.norm3(out)
+            if self.with_se:
+                out = self.se(out)
 
             if self.with_gcb:
                 out = self.context_block(out)
@@ -275,6 +299,7 @@ def make_res_layer(block,
                    stride=1,
                    dilation=1,
                    style='pytorch',
+                   with_se=False,
                    with_cp=False,
                    conv_cfg=None,
                    norm_cfg=dict(type='BN'),
@@ -304,6 +329,7 @@ def make_res_layer(block,
             dilation=dilation,
             downsample=downsample,
             style=style,
+            with_se=with_se,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
@@ -383,7 +409,7 @@ class SiameseResNet(nn.Module):
                  stage_with_gen_attention=((), (), (), ()),
                  with_cp=False,
                  zero_init_residual=True,
-                 with_stn=False):
+                 with_se=False):
         super(SiameseResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
@@ -433,6 +459,7 @@ class SiameseResNet(nn.Module):
                 dilation=dilation,
                 style=self.style,
                 with_cp=with_cp,
+                with_se=with_se,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
@@ -449,31 +476,31 @@ class SiameseResNet(nn.Module):
         self.feat_dim = self.block.expansion * 64 * 2 ** (
                 len(self.stage_blocks) - 1)
 
-        self.with_stn = with_stn
-        if with_stn:
-            # Spatial transformer localization-network
-            self.localization = nn.Sequential(
-                nn.Conv2d(6, 32, kernel_size=7),
-                nn.MaxPool2d(2, stride=2),
-                nn.ReLU(True),
-                nn.Conv2d(32, 32, kernel_size=5),
-                nn.MaxPool2d(2, stride=2),
-                nn.ReLU(True)
-            )
-
-            self.affine_in = 32 * 172 * 396
-
-            # Regressor for the 3 * 2 affine matrix
-            self.fc_loc = nn.Sequential(
-                nn.Linear(self.affine_in, 64),
-                nn.ReLU(True),
-                nn.Linear(64, 2 * 3)
-            )
-
-            # Initialize the weights/bias with identity transformation
-            self.fc_loc[2].weight.data.fill_(0)
-            self.fc_loc[2].bias.data = torch.FloatTensor([1, 0, 0,
-                                                          0, 1, 0,])
+        # self.with_stn = with_stn
+        # if with_stn:
+        #     # Spatial transformer localization-network
+        #     self.localization = nn.Sequential(
+        #         nn.Conv2d(6, 32, kernel_size=7),
+        #         nn.MaxPool2d(2, stride=2),
+        #         nn.ReLU(True),
+        #         nn.Conv2d(32, 32, kernel_size=5),
+        #         nn.MaxPool2d(2, stride=2),
+        #         nn.ReLU(True)
+        #     )
+        #
+        #     self.affine_in = 32 * 172 * 396
+        #
+        #     # Regressor for the 3 * 2 affine matrix
+        #     self.fc_loc = nn.Sequential(
+        #         nn.Linear(self.affine_in, 64),
+        #         nn.ReLU(True),
+        #         nn.Linear(64, 2 * 3)
+        #     )
+        #
+        #     # Initialize the weights/bias with identity transformation
+        #     self.fc_loc[2].weight.data.fill_(0)
+        #     self.fc_loc[2].bias.data = torch.FloatTensor([1, 0, 0,
+        #                                                   0, 1, 0, ])
 
     @property
     def norm1(self):
@@ -532,25 +559,25 @@ class SiameseResNet(nn.Module):
         else:
             raise TypeError('pretrained must be a str or None')
 
-    def stn(self, x, x2):
-        x = torch.cat([x, x2], dim=1)
-        # print(x.size())
-        xs = self.localization(x)
-        # print(xs.size())
-        xs = xs.view(-1, self.affine_in)
-        theta = self.fc_loc(xs)
-        theta = theta.view(-1, 2, 3)
-
-        grid = F.affine_grid(theta, x2.size())
-        x2 = F.grid_sample(x2, grid)
-
-        return x2
+    # def stn(self, x, x2):
+    #     x = torch.cat([x, x2], dim=1)
+    #     # print(x.size())
+    #     xs = self.localization(x)
+    #     # print(xs.size())
+    #     xs = xs.view(-1, self.affine_in)
+    #     theta = self.fc_loc(xs)
+    #     theta = theta.view(-1, 2, 3)
+    #
+    #     grid = F.affine_grid(theta, x2.size())
+    #     x2 = F.grid_sample(x2, grid)
+    #
+    #     return x2
 
     def forward(self, _x):
         x = _x[:, 0, :]
         x2 = _x[:, 1, :]
-        if self.with_stn:
-            x2 = self.stn(x, x2)
+        # if self.with_stn:
+        #     x2 = self.stn(x, x2)
             # x = self.stn(x_t, x)
         # else:
         #     x2 = x_t

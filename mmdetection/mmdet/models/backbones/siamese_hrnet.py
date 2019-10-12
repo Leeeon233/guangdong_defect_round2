@@ -440,25 +440,26 @@ class SiameseHRNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, _x):
-        x = _x[:, 0, :]
-        x2 = _x[:, 1, :]
+        x1 = _x[:, 0]
+        x2 = _x[:, 1]
 
 
-        x = self.conv1(x)
-        x = self.norm1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.norm2(x)
-        # x = self.relu(x)
+        x1 = self.conv1(x1)
+        x1 = self.norm1(x1)
+        x1 = self.relu(x1)
+        x1 = self.conv2(x1)
+        x1 = self.norm2(x1)
+        x = self.relu(x1)
+        x = self.layer1(x)
 
         x2 = self.conv1(x2)
         x2 = self.norm1(x2)
         x2 = self.relu(x2)
         x2 = self.conv2(x2)
         x2 = self.norm2(x2)
-        # x2 = self.relu(x2)
-
-        x = self.layer1(self.relu(x - x2))
+        x2 = self.relu(x2)
+        x2 = self.layer1(x2)
+        # x = self.layer1(self.relu(x1 - x2))
 
 
         x_list = []
@@ -486,7 +487,35 @@ class SiameseHRNet(nn.Module):
         y_list = self.stage4(x_list)
 
 
-        return y_list
+        x2_list = []
+        for i in range(self.stage2_cfg['num_branches']):
+            if self.transition1[i] is not None:
+                x2_list.append(self.transition1[i](x2))
+            else:
+                x2_list.append(x2)
+        y2_list = self.stage2(x2_list)
+
+        x2_list = []
+        for i in range(self.stage3_cfg['num_branches']):
+            if self.transition2[i] is not None:
+                x2_list.append(self.transition2[i](y2_list[-1]))
+            else:
+                x2_list.append(y2_list[i])
+        y2_list = self.stage3(x2_list)
+
+        x2_list = []
+        for i in range(self.stage4_cfg['num_branches']):
+            if self.transition3[i] is not None:
+                x2_list.append(self.transition3[i](y2_list[-1]))
+            else:
+                x2_list.append(y2_list[i])
+        y2_list = self.stage4(x2_list)
+
+        f_list = []
+        for t1, t2 in zip(y_list, y2_list):
+            f_list.append(t1 - t2)
+
+        return f_list
 
     def train(self, mode=True):
         super(SiameseHRNet, self).train(mode)
