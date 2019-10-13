@@ -1,7 +1,7 @@
-from mmdet.apis import init_detector, inference_detector
-import os
 import json
+import os
 
+from mmdet.apis import init_detector, inference_detector
 
 class Detector:
     def __init__(self):
@@ -22,19 +22,19 @@ class Detector:
                     x1, y1, x2, y2, score = bbox.tolist()
                     x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                     scores.append(score)
+
                     rs.append(
                         {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
             if len(scores) > 0 and max(scores) > 0.05:
                 # if len(scores) == 1 and max(scores) < 0.05:
                 #     continue
                 result += rs
-        return result
+        return result, res
 
 
 root = '/tcdata/guangdong1_round2_testA_20190924'
 result = []
 detector = Detector()
-from collections import defaultdict
 
 for dir_name in os.listdir(root):
     files = os.listdir(os.path.join(root, dir_name))
