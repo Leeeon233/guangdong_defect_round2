@@ -29,7 +29,7 @@ class Detector:
                 # if len(scores) == 1 and max(scores) < 0.05:
                 #     continue
                 result += rs
-        return result, res
+        return result
 
 
 root = '/tcdata/guangdong1_round2_testA_20190924'
