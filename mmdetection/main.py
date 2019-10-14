@@ -89,4 +89,4 @@ result += res
 
 with open('result.json', 'w') as fp:
     json.dump(result, fp, indent=4, separators=(',', ': '))
-print("总用时", time.time() - s)
+print("time use", time.time() - s)
