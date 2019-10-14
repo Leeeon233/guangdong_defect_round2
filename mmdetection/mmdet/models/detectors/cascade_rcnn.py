@@ -1,5 +1,6 @@
 from __future__ import division
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -272,11 +273,99 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         return losses
 
+    def batch_test(self, img, img_meta, proposals=None, rescale=False):
+        # print("batch_test")
+        x = self.extract_feat(img)
+        proposal_lists = self.batch_test_rpn(
+            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+        # print(proposal_lists, "proposal")
+        resultses = []
+
+        # "ms" in variable names means multi-stage
+        ms_bbox_result = {}
+        ms_segm_result = {}
+        ms_scores = []
+        rcnn_test_cfg = self.test_cfg.rcnn
+
+        rois = bbox2roi(proposal_lists)
+        # print("rois", rois.size())
+        num_per_img = [len(proposal_list) for proposal_list in proposal_lists]
+        # print(num_per_img) # 1000 406
+        # print("rois", rois.size())
+
+        for i in range(self.num_stages):
+            bbox_roi_extractor = self.bbox_roi_extractor[i]
+            bbox_head = self.bbox_head[i]
+
+            bbox_feats = bbox_roi_extractor(
+                x[:len(bbox_roi_extractor.featmap_strides)], rois)
+            # print("box_feats", bbox_feats.size())
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
+            cls_score, bbox_pred = bbox_head(bbox_feats)
+            # print("cls_score", cls_score.size())
+            # print("bbox_pred", bbox_pred.size())
+            cls_scores = cls_score.split(num_per_img, 0)
+            ms_scores.append(cls_scores)
+
+            if i < self.num_stages - 1:
+                _rois = []
+                rois_ = rois.split(num_per_img, 0)
+
+                bbox_preds = bbox_pred.split(num_per_img, 0)
+                for j in range(len(num_per_img)):
+                    bbox_label = cls_scores[j].argmax(dim=1)
+                    _rois.append(bbox_head.regress_by_class(rois_[j], bbox_label, bbox_preds[j],
+                                                            img_meta[j]))
+                rois = torch.cat(_rois)
+
+        rois = rois.split(num_per_img, 0)
+        bbox_preds = bbox_pred.split(num_per_img, 0)
+        for j in range(len(num_per_img)):
+            img_shape = img_meta[j]['img_shape']
+            # ori_shape = img_meta[j]['ori_shape']
+            scale_factor = img_meta[j]['scale_factor']
+            # print(rois[j].size())
+            # print(bbox_preds[j].size())
+            cls_score = sum(np.array(ms_scores)[:, j]) / self.num_stages
+            det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
+                rois[j],
+                cls_score,
+                bbox_preds[j],
+                img_shape,
+                scale_factor,
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            bbox_result = bbox2result(det_bboxes, det_labels,
+                                      self.bbox_head[-1].num_classes)
+            ms_bbox_result['ensemble'] = bbox_result
+
+
+
+            if not self.test_cfg.keep_all_stages:
+                if self.with_mask:
+                    results = (ms_bbox_result['ensemble'],
+                               ms_segm_result['ensemble'])
+                else:
+                    results = ms_bbox_result['ensemble']
+            else:
+                if self.with_mask:
+                    results = {
+                        stage: (ms_bbox_result[stage], ms_segm_result[stage])
+                        for stage in ms_bbox_result
+                    }
+                else:
+                    results = ms_bbox_result
+            resultses.append(results)
+        return resultses
+
+
+
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         x = self.extract_feat(img)
         proposal_list = self.simple_test_rpn(
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
-
+        # print(len(proposal_list))
         img_shape = img_meta[0]['img_shape']
         ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
@@ -288,6 +377,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         rcnn_test_cfg = self.test_cfg.rcnn
 
         rois = bbox2roi(proposal_list)
+        # print("rois", rois.size())
         for i in range(self.num_stages):
             bbox_roi_extractor = self.bbox_roi_extractor[i]
             bbox_head = self.bbox_head[i]

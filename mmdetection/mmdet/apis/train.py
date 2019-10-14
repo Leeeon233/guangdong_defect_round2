@@ -12,9 +12,9 @@ from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
 from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
+
 import math
 from torch.optim.optimizer import Optimizer
-
 
 
 
@@ -159,6 +159,7 @@ class Ranger(Optimizer):
 
         return loss
 
+
 def parse_losses(losses):
     log_vars = OrderedDict()
     for loss_name, loss_value in losses.items():
@@ -191,8 +192,8 @@ def batch_processor(model, data, train_mode):
     #     # print('img size ', img.size())
     #     data['img'] = DC(img)
 
-
-
+    # print(data['img'].data[0].size())   # (B, 2, 3, h, w)
+    # print(len(data['img_meta'].data[0]))  # (B)
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
 

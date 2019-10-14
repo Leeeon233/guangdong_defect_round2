@@ -10,6 +10,9 @@ class RPNTestMixin(object):
         proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
 
+    def batch_test_rpn(self, x, img_meta, rpn_test_cfg):
+        return self.simple_test_rpn(x, img_meta, rpn_test_cfg)
+
     def aug_test_rpn(self, feats, img_metas, rpn_test_cfg):
         imgs_per_gpu = len(img_metas[0])
         aug_proposals = [[] for _ in range(imgs_per_gpu)]
@@ -58,6 +61,41 @@ class BBoxTestMixin(object):
             scale_factor,
             rescale=rescale,
             cfg=rcnn_test_cfg)
+        return det_bboxes, det_labels
+
+    def batch_test_bboxes(self,
+                          x,
+                          img_meta,
+                          proposals,
+                          rcnn_test_cfg,
+                          rescale=False):
+        """Test only det bboxes without augmentation."""
+        rois = bbox2roi(proposals)
+        roi_feats = self.bbox_roi_extractor(
+            x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+        if self.with_shared_head:
+            roi_feats = self.shared_head(roi_feats)
+        cls_score, bbox_pred = self.bbox_head(roi_feats)
+        num_per_img = [len(proposal) for proposal in proposals]
+
+        rois = rois.split(num_per_img, 0)
+        cls_scores = cls_score.split(num_per_img, 0)
+        bbox_preds = bbox_pred.split(num_per_img, 0)
+        det_bboxes = []
+        det_labels = []
+        for i in range(len(num_per_img)):
+            img_shape = img_meta[i]['img_shape']
+            scale_factor = img_meta[i]['scale_factor']
+            det_bbox, det_label = self.bbox_head.get_det_bboxes(
+                rois[i],
+                cls_scores[i],
+                bbox_preds[i],
+                img_shape,
+                scale_factor,
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):

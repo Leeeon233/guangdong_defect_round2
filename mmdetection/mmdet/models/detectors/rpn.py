@@ -43,6 +43,14 @@ class RPN(BaseDetector, RPNTestMixin):
         rpn_outs = self.rpn_head(x)
         return rpn_outs
 
+    def batch_test(self, img, img_meta, rescale=False):
+        x = self.extract_feat(img)
+        proposal_list = self.simple_test_rpn(x, img_meta, self.test_cfg.rpn)
+        if rescale:
+            for proposals, meta in zip(proposal_list, img_meta):
+                proposals[:, :4] /= meta['scale_factor']
+        return [proposal.cpu().numpy() for proposal in proposal_list]
+
     def forward_train(self,
                       img,
                       img_meta,
