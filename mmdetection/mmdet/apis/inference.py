@@ -102,7 +102,7 @@ def inference_detector(model, img):
     # print(data['img'][1].size())
     # exit()
     # forward the model
-    print("读取数据：", time.time() - s )
+    # print("读取数据：", time.time() - s )
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
 
