@@ -34,8 +34,8 @@ class Detector:
 
     def detect_batch_imgs(self, file_paths, batch_size):
         result = []
-        for i in range(0, len(file_paths), batch_size):
-            paths = file_paths[i:i + batch_size]
+        for j in range(0, len(file_paths), batch_size):
+            paths = file_paths[j:j + batch_size]
             predicts = inference_detector_batch(self.model, paths)
             for (file_path, _), predict in zip(paths, predicts):
                 # vis_img = cv2.imread(file_path)
