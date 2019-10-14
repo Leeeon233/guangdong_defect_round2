@@ -183,7 +183,7 @@ test_pipeline = [
         img_scale=(2048, 900),
         flip=False,
         transforms=[
-            dict(type='ResizeImages', keep_ratio=True),
+            dict(type='ResizeImages', keep_ratio=False),
             dict(type='RandomFlipImages'),
             dict(type='NormalizeImages', **img_norm_cfg),
             dict(type='PadImages', size_divisor=32),
