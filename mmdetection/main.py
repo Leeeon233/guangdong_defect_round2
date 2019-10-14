@@ -4,6 +4,7 @@ import time
 
 from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
+
 class Detector:
     def __init__(self):
         self.model = init_detector(
@@ -70,23 +71,47 @@ class Detector:
                 # cv2.imwrite(f"predict/pred_{image_name}", vis_img)
         return result
 
-s = time.time()
-root = '/tcdata/guangdong1_round2_testA_20190924'
-result = []
-detector = Detector()
-paths = []
-for dir_name in os.listdir(root):
-    files = os.listdir(os.path.join(root, dir_name))
-    if files[0].startswith('template'):
-        files = [files[1], files[0]]
-    file = files[0]
-    template_file = files[1]
-    paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
-# res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-res = detector.detect_batch_imgs(paths, 10)
-result += res
+def batch_inference():
+    s = time.time()
+    root = '/tcdata/guangdong1_round2_testA_20190924'
+    result = []
+    detector = Detector()
+    paths = []
+    for dir_name in os.listdir(root):
+        files = os.listdir(os.path.join(root, dir_name))
+        if files[0].startswith('template'):
+            files = [files[1], files[0]]
+        file = files[0]
+        template_file = files[1]
+        paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
-with open('result.json', 'w') as fp:
-    json.dump(result, fp, indent=4, separators=(',', ': '))
-print("time use", time.time() - s)
+    # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
+    res = detector.detect_batch_imgs(paths, 10)
+    result += res
+
+    with open('result.json', 'w') as fp:
+        json.dump(result, fp, indent=4, separators=(',', ': '))
+    print("time use", time.time() - s)
+
+
+def single_inference():
+    s = time.time()
+    root = '/tcdata/guangdong1_round2_testA_20190924'
+    result = []
+    detector = Detector()
+    for dir_name in os.listdir(root):
+        files = os.listdir(os.path.join(root, dir_name))
+        if files[0].startswith('template'):
+            files = [files[1], files[0]]
+        file = files[0]
+        template_file = files[1]
+        res = detector.detect_single_img(os.path.join(root, dir_name, file),
+                                         os.path.join(root, dir_name, template_file))
+        result += res
+    with open('result.json', 'w') as fp:
+        json.dump(result, fp, indent=4, separators=(',', ': '))
+    print("time use", time.time() - s)
+
+
+single_inference()
