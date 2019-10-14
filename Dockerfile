@@ -1,4 +1,4 @@
-FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:senet
+FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:blur
 MAINTAINER leonzhao
 ADD . /competition
 WORKDIR /competition

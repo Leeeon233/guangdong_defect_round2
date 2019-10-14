@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import torch.nn as nn
 import torch
 
@@ -357,6 +358,117 @@ def make_res_layer(block,
     return nn.Sequential(*layers)
 
 
+class Downsample(nn.Module):
+    def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
+        super(Downsample, self).__init__()
+        self.filt_size = filt_size
+        self.pad_off = pad_off
+        self.pad_sizes = [int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2)),
+                          int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2))]
+        self.pad_sizes = [pad_size + pad_off for pad_size in self.pad_sizes]
+        self.stride = stride
+        self.off = int((self.stride - 1) / 2.)
+        self.channels = channels
+
+        # print('Filter size [%i]'%filt_size)
+        if self.filt_size == 1:
+            a = np.array([1., ])
+        elif self.filt_size == 2:
+            a = np.array([1., 1.])
+        elif self.filt_size == 3:
+            a = np.array([1., 2., 1.])
+        elif self.filt_size == 4:
+            a = np.array([1., 3., 3., 1.])
+        elif self.filt_size == 5:
+            a = np.array([1., 4., 6., 4., 1.])
+        elif self.filt_size == 6:
+            a = np.array([1., 5., 10., 10., 5., 1.])
+        elif self.filt_size == 7:
+            a = np.array([1., 6., 15., 20., 15., 6., 1.])
+
+        filt = torch.Tensor(a[:, None] * a[None, :])
+        filt = filt / torch.sum(filt)
+        self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)))
+
+        self.pad = get_pad_layer(pad_type)(self.pad_sizes)
+
+    def forward(self, inp):
+        if self.filt_size == 1:
+            if self.pad_off == 0:
+                return inp[:, :, ::self.stride, ::self.stride]
+            else:
+                return self.pad(inp)[:, :, ::self.stride, ::self.stride]
+        else:
+            return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+
+
+def get_pad_layer(pad_type):
+    if pad_type in ['refl', 'reflect']:
+        PadLayer = nn.ReflectionPad2d
+    elif pad_type in ['repl', 'replicate']:
+        PadLayer = nn.ReplicationPad2d
+    elif pad_type == 'zero':
+        PadLayer = nn.ZeroPad2d
+    else:
+        print('Pad type [%s] not recognized' % pad_type)
+    return PadLayer
+
+
+class Downsample1D(nn.Module):
+    def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
+        super(Downsample1D, self).__init__()
+        self.filt_size = filt_size
+        self.pad_off = pad_off
+        self.pad_sizes = [int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2))]
+        self.pad_sizes = [pad_size + pad_off for pad_size in self.pad_sizes]
+        self.stride = stride
+        self.off = int((self.stride - 1) / 2.)
+        self.channels = channels
+
+        # print('Filter size [%i]' % filt_size)
+        if (self.filt_size == 1):
+            a = np.array([1., ])
+        elif (self.filt_size == 2):
+            a = np.array([1., 1.])
+        elif (self.filt_size == 3):
+            a = np.array([1., 2., 1.])
+        elif (self.filt_size == 4):
+            a = np.array([1., 3., 3., 1.])
+        elif (self.filt_size == 5):
+            a = np.array([1., 4., 6., 4., 1.])
+        elif (self.filt_size == 6):
+            a = np.array([1., 5., 10., 10., 5., 1.])
+        elif (self.filt_size == 7):
+            a = np.array([1., 6., 15., 20., 15., 6., 1.])
+
+        filt = torch.Tensor(a)
+        filt = filt / torch.sum(filt)
+        self.register_buffer('filt', filt[None, None, :].repeat((self.channels, 1, 1)))
+
+        self.pad = get_pad_layer_1d(pad_type)(self.pad_sizes)
+
+    def forward(self, inp):
+        if (self.filt_size == 1):
+            if (self.pad_off == 0):
+                return inp[:, :, ::self.stride]
+            else:
+                return self.pad(inp)[:, :, ::self.stride]
+        else:
+            return F.conv1d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+
+
+def get_pad_layer_1d(pad_type):
+    if (pad_type in ['refl', 'reflect']):
+        PadLayer = nn.ReflectionPad1d
+    elif (pad_type in ['repl', 'replicate']):
+        PadLayer = nn.ReplicationPad1d
+    elif (pad_type == 'zero'):
+        PadLayer = nn.ZeroPad1d
+    else:
+        print('Pad type [%s] not recognized' % pad_type)
+    return PadLayer
+
+
 @BACKBONES.register_module
 class SiameseResNet(nn.Module):
     """ResNet backbone.
@@ -409,6 +521,7 @@ class SiameseResNet(nn.Module):
                  stage_with_gen_attention=((), (), (), ()),
                  with_cp=False,
                  zero_init_residual=True,
+                 with_blur=False,
                  with_se=False):
         super(SiameseResNet, self).__init__()
         if depth not in self.arch_settings:
@@ -426,6 +539,7 @@ class SiameseResNet(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
+        self.with_blur = with_blur
         self.norm_eval = norm_eval
         self.dcn = dcn
         self.stage_with_dcn = stage_with_dcn
@@ -440,8 +554,10 @@ class SiameseResNet(nn.Module):
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = 64
-
-        self._make_stem_layer()
+        if with_blur:
+            self._make_stem_layer_blur()
+        else:
+            self._make_stem_layer()
 
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
@@ -515,10 +631,42 @@ class SiameseResNet(nn.Module):
             stride=2,
             padding=3,
             bias=False)
+        # self.conv2 = build_conv_layer(
+        #     self.conv_cfg,
+        #     3,
+        #     64,
+        #     kernel_size=7,
+        #     stride=2,
+        #     padding=3,
+        #     bias=False)
         self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+    def _make_stem_layer_blur(self):
+        print("blur")
+        self.conv1 = build_conv_layer(
+            self.conv_cfg,
+            3,
+            64,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False)
+        # self.conv2 = build_conv_layer(
+        #     self.conv_cfg,
+        #     3,
+        #     64,
+        #     kernel_size=7,
+        #     stride=2,
+        #     padding=3,
+        #     bias=False)
+        self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
+        self.add_module(self.norm1_name, norm1)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
+        self.dc = Downsample(stride=2, channels=64, filt_size=5)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -578,7 +726,7 @@ class SiameseResNet(nn.Module):
         x2 = _x[:, 1, :]
         # if self.with_stn:
         #     x2 = self.stn(x, x2)
-            # x = self.stn(x_t, x)
+        # x = self.stn(x_t, x)
         # else:
         #     x2 = x_t
         x = self.conv1(x)
@@ -586,10 +734,15 @@ class SiameseResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
+
         x2 = self.conv1(x2)
         x2 = self.norm1(x2)
         x2 = self.relu(x2)
         x2 = self.maxpool(x2)
+
+        if self.with_blur:
+            x = self.dc(x)
+            x2 = self.dc(x2)
 
         outs = []
         for i, layer_name in enumerate(self.res_layers):
