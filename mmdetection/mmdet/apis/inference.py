@@ -1,4 +1,5 @@
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import mmcv
@@ -10,7 +11,6 @@ from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
-from mmcv.parallel import DataContainer as DC
 from mmdet.models import build_detector
 
 
@@ -60,14 +60,24 @@ class LoadImage(object):
         results['ori_shape'] = img.shape
         return results
 
-class LoadImages(object):
 
+class LoadImages(object):
     def __call__(self, results):
         results['filename'] = None
         img = mmcv.imread(results['img'][0])
         results['img'] = [mmcv.imread(results['img'][0]), mmcv.imread(results['img'][1])]
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
+        return results
+
+
+class LoadBatchImages(object):
+    def __call__(self, results):
+        results['filename'] = None
+        img_shape = results['img'][0].shape
+        results['img'] = [results['img'][0], results['img'][1]]
+        results['img_shape'] = img_shape
+        results['ori_shape'] = img_shape
         return results
 
 
@@ -83,8 +93,6 @@ def inference_detector(model, img):
         If imgs is a str, a generator will be returned, otherwise return the
         detection results directly.
     """
-    import time
-    s = time.time()
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
     # build the data pipeline
@@ -99,16 +107,10 @@ def inference_detector(model, img):
     data = test_pipeline(data)
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
 
-    # print(data['img'][1].size())
-    # exit()
-    # forward the model
-    # print("读取数据：", time.time() - s )
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
 
     return result
-
-
 
 
 def inference_detector_batch(model, imgs):
@@ -124,37 +126,36 @@ def inference_detector_batch(model, imgs):
         detection results directly.
     """
     assert len(imgs) > 1, "batch 大于 1"
-    batch_size = len(imgs)
     import time
     from collections import defaultdict
     s = time.time()
-    cfg = model.cfg
-    device = next(model.parameters()).device  # model device
-    # build the data pipeline
-    test_pipeline = [LoadImages()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
-    # prepare data
-    from concurrent.futures import ThreadPoolExecutor
-    executor = ThreadPoolExecutor()
-    datas = defaultdict()
+    result = defaultdict()
+
     def parse(f):
         idx, data = f.result()
-        datas[idx] = data
+        result[idx] = data
 
     def read_data(img, idx):
         data = dict(img=img)
         data = test_pipeline(data)
         return idx, data
 
+    batch_size = len(imgs)
+    cfg = model.cfg
+    device = next(model.parameters()).device  # model device
+    # build the data pipeline
+    test_pipeline = [LoadImages()] + cfg.data.test.pipeline[1:]
+    test_pipeline = Compose(test_pipeline)
+    # prepare data
+    datas = []
+    executor = ThreadPoolExecutor()
     for i, img in enumerate(imgs):
         executor.submit(read_data, img, i).add_done_callback(parse)
     executor.shutdown()
-    datass = []
     for i in range(batch_size):
-        datass.append(datas[i])
-    data = scatter(collate(datass, samples_per_gpu=batch_size), [device])[0]
-    # print("读取数据用时", time.time() - s)
-
+        datas.append(result[i])
+    data = scatter(collate(datas, samples_per_gpu=batch_size), [device])[0]
+    # print("read data time: ", time.time() - s)
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
 

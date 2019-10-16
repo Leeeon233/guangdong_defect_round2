@@ -91,8 +91,6 @@ class BaseDetector(nn.Module):
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)
         else:
-            import time
-            s = time.time()
             res = self.forward_test(img, img_meta, **kwargs)
             # print("推断用时：", time.time() - s)
             return res

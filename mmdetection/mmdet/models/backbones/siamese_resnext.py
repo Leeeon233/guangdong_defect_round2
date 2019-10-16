@@ -5,9 +5,25 @@ import torch.nn as nn
 from mmdet.ops import DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
-from .resnet import Bottleneck as _Bottleneck
+from .siamese_resnet import Bottleneck as _Bottleneck
 from .siamese_resnet import SiameseResNet
 
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
 
 class Bottleneck(_Bottleneck):
 
@@ -91,6 +107,7 @@ class Bottleneck(_Bottleneck):
         self.add_module(self.norm3_name, norm3)
 
 
+
 def make_res_layer(block,
                    inplanes,
                    planes,
@@ -101,6 +118,7 @@ def make_res_layer(block,
                    base_width=4,
                    style='pytorch',
                    with_cp=False,
+                   with_se=False,
                    conv_cfg=None,
                    norm_cfg=dict(type='BN'),
                    dcn=None,
@@ -130,6 +148,7 @@ def make_res_layer(block,
             base_width=base_width,
             style=style,
             with_cp=with_cp,
+            with_se=with_se,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             dcn=dcn,
@@ -146,6 +165,7 @@ def make_res_layer(block,
                 base_width=base_width,
                 style=style,
                 with_cp=with_cp,
+                with_se=with_se,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
@@ -211,6 +231,7 @@ class SiameseResNeXt(SiameseResNet):
                 base_width=self.base_width,
                 style=self.style,
                 with_cp=self.with_cp,
+                with_se=self.with_se,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg,
                 dcn=dcn,

@@ -116,6 +116,7 @@ class Bottleneck(nn.Module):
                  style='pytorch',
                  with_se=False,
                  with_cp=False,
+                 with_blur=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
@@ -138,6 +139,7 @@ class Bottleneck(nn.Module):
         self.style = style
         self.with_cp = with_cp
         self.with_se = with_se
+        self.with_blur = with_blur
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.dcn = dcn
@@ -158,7 +160,7 @@ class Bottleneck(nn.Module):
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
             norm_cfg, planes * self.expansion, postfix=3)
-        if with_se:
+        if self.with_se:
             self.se = SELayer(planes * self.expansion, 16)
 
         self.conv1 = build_conv_layer(
@@ -322,6 +324,7 @@ def make_res_layer(block,
         )
 
     layers = []
+
     layers.append(
         block(
             inplanes=inplanes,
@@ -348,12 +351,14 @@ def make_res_layer(block,
                 dilation=dilation,
                 style=style,
                 with_cp=with_cp,
+                with_se=with_se,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
                 gcb=gcb,
                 gen_attention=gen_attention if
                 (i in gen_attention_blocks) else None))
+
 
     return nn.Sequential(*layers)
 
@@ -539,6 +544,7 @@ class SiameseResNet(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
+        self.with_se = with_se
         self.with_blur = with_blur
         self.norm_eval = norm_eval
         self.dcn = dcn
@@ -645,7 +651,7 @@ class SiameseResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def _make_stem_layer_blur(self):
-        print("blur")
+        # print("blur")
         self.conv1 = build_conv_layer(
             self.conv_cfg,
             3,

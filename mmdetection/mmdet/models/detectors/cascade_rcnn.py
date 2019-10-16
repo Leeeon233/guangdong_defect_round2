@@ -160,7 +160,6 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       proposals=None):
 
         x = self.extract_feat(img)
-
         losses = dict()
 
         if self.with_rpn:
@@ -308,16 +307,20 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             cls_scores = cls_score.split(num_per_img, 0)
             ms_scores.append(cls_scores)
 
+            # if i < self.num_stages - 1:
+            #     _rois = []
+            #     rois_ = rois.split(num_per_img, 0)
+            #
+            #     bbox_preds = bbox_pred.split(num_per_img, 0)
+            #     for j in range(len(num_per_img)):
+            #         bbox_label = cls_scores[j].argmax(dim=1)
+            #         _rois.append(bbox_head.regress_by_class(rois_[j], bbox_label, bbox_preds[j],
+            #                                                 img_meta[j]))
+            #     rois = torch.cat(_rois)
             if i < self.num_stages - 1:
-                _rois = []
-                rois_ = rois.split(num_per_img, 0)
-
-                bbox_preds = bbox_pred.split(num_per_img, 0)
-                for j in range(len(num_per_img)):
-                    bbox_label = cls_scores[j].argmax(dim=1)
-                    _rois.append(bbox_head.regress_by_class(rois_[j], bbox_label, bbox_preds[j],
-                                                            img_meta[j]))
-                rois = torch.cat(_rois)
+                bbox_label = cls_score.argmax(dim=1)
+                rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
+                                                        img_meta[0])
 
         rois = rois.split(num_per_img, 0)
         bbox_preds = bbox_pred.split(num_per_img, 0)

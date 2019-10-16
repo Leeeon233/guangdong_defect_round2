@@ -4,8 +4,9 @@ import time
 
 from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
-
+count = 0
 def get_result(predict, file_path):
+    global count
     result = []
     scores = []
     image_name = os.path.basename(file_path)
@@ -19,8 +20,9 @@ def get_result(predict, file_path):
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
     if len(scores) > 0 and max(scores) > 0.1:
-        # if len(scores) == 1 and max(scores) < 0.1:
-        #     return []
+        if len(scores) == 1 and max(scores) < 0.1:
+            count += 1
+            return []
         return result
     else:
         return []
@@ -29,8 +31,8 @@ def get_result(predict, file_path):
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
-            '/competition/epoch_2.pth', device='cuda:0')
+            '/competition/mmdetection/myconfig/senet/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_se.py',
+            '/competition/epoch_24.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -41,7 +43,7 @@ class Detector:
         result = []
         for j in range(0, len(file_paths), batch_size):
             paths = file_paths[j:j + batch_size]
-            predicts = inference_detector_batch(self.model, paths)
+            predicts = inference_detector_batch(self.model, paths) if len(paths) > 1 else inference_detector(self.model, paths)
             for (file_path, _), predict in zip(paths, predicts):
                 result += get_result(predict, file_path)
         return result
@@ -62,7 +64,7 @@ def batch_inference():
         paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
     # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-    res = detector.detect_batch_imgs(paths, 15)
+    res = detector.detect_batch_imgs(paths, 12)
     result += res
 
     with open('result.json', 'w') as fp:
@@ -90,3 +92,4 @@ def single_inference():
 
 
 batch_inference()
+print("count ", count)
