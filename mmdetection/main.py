@@ -5,6 +5,8 @@ import time
 from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
 count = 0
+
+
 def get_result(predict, file_path):
     global count
     result = []
@@ -19,11 +21,13 @@ def get_result(predict, file_path):
                 x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                 scores.append(score)
                 defects.append(i)
+                if defect_label == 1 or defect_label == 4:
+                    if score < 0.3:
+                        continue
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
     if len(scores) > 0 and max(scores) > 0.05:
-        # if len(scores) == 1 and max(scores) < 0.1:
-        if set(defects).issubset([1, 4]) and max(scores) < 0.2:
+        if len(scores) == 1 and max(scores) < 0.1:
             count += 1
             return []
         return result
@@ -46,7 +50,8 @@ class Detector:
         result = []
         for j in range(0, len(file_paths), batch_size):
             paths = file_paths[j:j + batch_size]
-            predicts = inference_detector_batch(self.model, paths) if len(paths) > 1 else inference_detector(self.model, paths)
+            predicts = inference_detector_batch(self.model, paths) if len(paths) > 1 else inference_detector(self.model,
+                                                                                                             paths)
             for (file_path, _), predict in zip(paths, predicts):
                 result += get_result(predict, file_path)
         return result
