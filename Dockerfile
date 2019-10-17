@@ -1,10 +1,11 @@
-FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:all
+FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:blur_finetune
 MAINTAINER leonzhao
 ADD . /competition
 WORKDIR /competition
 ENV CUDA_HOME /usr/local/cuda-10.0
 ENV PATH $PATH:/usr/local/cuda-10.0/bin
 ENV LD_LIBRARY_PATH /usr/local/cuda-10.0/lib64
+RUN ls
 #RUN apt-get update && apt-get install -y libglib2.0-0 libglib2.0-dev libsm6 libxrender-dev libxext6 \
 # && apt-get clean \
 # && rm -rf /var/lib/apt/lists/*

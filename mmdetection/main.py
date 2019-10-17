@@ -9,6 +9,7 @@ def get_result(predict, file_path):
     global count
     result = []
     scores = []
+    defects = []
     image_name = os.path.basename(file_path)
     for i, bboxes in enumerate(predict, 1):
         if len(bboxes) > 0:
@@ -17,23 +18,24 @@ def get_result(predict, file_path):
                 x1, y1, x2, y2, score = bbox.tolist()
                 x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                 scores.append(score)
+                defects.append(i)
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-    return result
-    # if len(scores) > 0 and max(scores) > 0.05:
-    #     if len(scores) == 1 and max(scores) < 0.1:
-    #         count += 1
-    #         return []
-    #     return result
-    # else:
-    #     return []
+    if len(scores) > 0 and max(scores) > 0.05:
+        # if len(scores) == 1 and max(scores) < 0.1:
+        if set(defects).issubset([1, 4]) and max(scores) < 0.2:
+            count += 1
+            return []
+        return result
+    else:
+        return []
 
 
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/101/cascade_rcnn_dconv_c3-c5_r101_fpn_1x_round2_se_blur_gn.py',
-            '/competition/epoch_1.pth', device='cuda:0')
+            '/competition/mmdetection/myconfig/senet/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
+            '/competition/epoch_2.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -65,7 +67,7 @@ def batch_inference():
         paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
     # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-    res = detector.detect_batch_imgs(paths, 6)
+    res = detector.detect_batch_imgs(paths, 12)
     result += res
 
     with open('result.json', 'w') as fp:
