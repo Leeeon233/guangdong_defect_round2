@@ -34,7 +34,7 @@ def get_result(predict, file_path):
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/senet/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
+            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
             '/competition/epoch_2.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
