@@ -19,20 +19,21 @@ def get_result(predict, file_path):
                 scores.append(score)
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-    if len(scores) > 0 and max(scores) > 0.05:
-        if len(scores) == 1 and max(scores) < 0.1:
-            count += 1
-            return []
-        return result
-    else:
-        return []
+    return result
+    # if len(scores) > 0 and max(scores) > 0.05:
+    #     if len(scores) == 1 and max(scores) < 0.1:
+    #         count += 1
+    #         return []
+    #     return result
+    # else:
+    #     return []
 
 
 class Detector:
     def __init__(self):
         self.model = init_detector(
             '/competition/mmdetection/myconfig/101/cascade_rcnn_dconv_c3-c5_r101_fpn_1x_round2_se_blur_gn.py',
-            '/competition/epoch_5.pth', device='cuda:0')
+            '/competition/epoch_1.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
