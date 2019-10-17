@@ -22,7 +22,7 @@ def get_result(predict, file_path):
                 scores.append(score)
                 defects.append(i)
                 if defect_label == 1 or defect_label == 4:
-                    if score < 0.3:
+                    if score < 0.1:
                         continue
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
