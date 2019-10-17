@@ -31,8 +31,8 @@ def get_result(predict, file_path):
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/senet/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_se.py',
-            '/competition/epoch_5.pth', device='cuda:0')
+            '/competition/mmdetection/myconfig/101/cascade_rcnn_dconv_c3-c5_r101_fpn_1x_round2_se_blur_gn.py',
+            '/competition/epoch_15.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -64,7 +64,7 @@ def batch_inference():
         paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
     # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-    res = detector.detect_batch_imgs(paths, 12)
+    res = detector.detect_batch_imgs(paths, 6)
     result += res
 
     with open('result.json', 'w') as fp:
