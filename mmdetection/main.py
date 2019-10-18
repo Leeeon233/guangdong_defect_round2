@@ -21,9 +21,8 @@ def get_result(predict, file_path):
                 x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                 scores.append(score)
                 defects.append(i)
-                if defect_label == 1 or defect_label == 4:
-                    if score < 0.2:
-                        continue
+                result.append(
+                    {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
     if len(scores) > 0 and max(scores) > 0.05:
