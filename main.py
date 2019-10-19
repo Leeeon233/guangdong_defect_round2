@@ -2,7 +2,7 @@ import os
 import json
 from detection_single_img import Detector
 import numpy as np
-
+from mmdetection.utils import merge_results
 
 def non_max_suppression_fast(boxes, scores, overlapThresh):
     # if there are no boxes, return an empty list
