@@ -197,6 +197,7 @@ class GridRCNN(TwoStageDetector):
         return losses
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
+        # print(img_meta)
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
 
@@ -206,6 +207,38 @@ class GridRCNN(TwoStageDetector):
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 
         det_bboxes, det_labels = self.simple_test_bboxes(
+            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=False)
+
+        # pack rois into bboxes
+        grid_rois = bbox2roi([det_bboxes[:, :4]])
+        grid_feats = self.grid_roi_extractor(
+            x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
+        if grid_rois.shape[0] != 0:
+            self.grid_head.test_mode = True
+            grid_pred = self.grid_head(grid_feats)
+            det_bboxes = self.grid_head.get_bboxes(det_bboxes,
+                                                   grid_pred['fused'],
+                                                   img_meta)
+            if rescale:
+                det_bboxes[:, :4] /= torch.from_numpy(img_meta[0]['scale_factor']).to(det_bboxes.device)
+        else:
+            det_bboxes = torch.Tensor([])
+
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        return bbox_results
+
+    def batch_test(self, img, img_meta, proposals=None, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, "Bbox head must be implemented."
+
+        x = self.extract_feat(img)
+
+        proposal_list = self.simple_test_rpn(
+            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+
+        det_bboxes, det_labels = self.batch_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=False)
 
         # pack rois into bboxes
