@@ -1,4 +1,4 @@
-FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:blur_finetune
+FROM registry.cn-shenzhen.aliyuncs.com/leonzhao/guangdong_cloth:grid
 MAINTAINER leonzhao
 ADD . /competition
 WORKDIR /competition
