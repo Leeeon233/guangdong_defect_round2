@@ -41,6 +41,7 @@ def get_result(predict, file_path):
                 # if score > score_map[i]:
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
+    return result
     if len(scores) > 0 and max(scores) > 0.05:
         if len(scores) == 1 and max(scores) < 0.1:
             count += 1
@@ -54,7 +55,7 @@ class Detector:
     def __init__(self):
         self.model = init_detector(
             '/competition/mmdetection/myconfig/101/grid_rcnn_gn_head_x101_32x4d_fpn_2x.py',
-            '/competition/epoch_8.pth', device='cuda:0')
+            '/competition/epoch_1.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
