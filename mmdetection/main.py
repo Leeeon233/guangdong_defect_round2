@@ -9,23 +9,23 @@ count = 0
 
 def get_result(predict, file_path):
     global count
-    score_map = {
-        1: 0.33,
-        2: 0,
-        3: 0.2,
-        4: 0.4,
-        5: 0.7,
-        6: 0.5,
-        7: 0.3,
-        8: 0.2,
-        9: 0.1,
-        10: 0.14,
-        11: 0.1,
-        12: 0.05,
-        13: 0.15,
-        14: 0.001,
-        15: 0.005
-    }
+    # score_map = {
+    #     1: 0.33,
+    #     2: 0,
+    #     3: 0.2,
+    #     4: 0.4,
+    #     5: 0.7,
+    #     6: 0.5,
+    #     7: 0.3,
+    #     8: 0.2,
+    #     9: 0.1,
+    #     10: 0.14,
+    #     11: 0.1,
+    #     12: 0.05,
+    #     13: 0.15,
+    #     14: 0.001,
+    #     15: 0.005
+    # }
     result = []
     scores = []
     defects = []
@@ -38,10 +38,9 @@ def get_result(predict, file_path):
                 x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                 scores.append(score)
                 defects.append(i)
-                if score > score_map[i]:
-                    result.append(
-                        {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-    return result
+                # if score > score_map[i]:
+                result.append(
+                    {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
     if len(scores) > 0 and max(scores) > 0.05:
         if len(scores) == 1 and max(scores) < 0.1:
             count += 1
@@ -54,8 +53,8 @@ def get_result(predict, file_path):
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
-            '/competition/epoch_2.pth', device='cuda:0')
+            '/competition/mmdetection/myconfig/101/grid_rcnn_gn_head_x101_32x4d_fpn_2x.py',
+            '/competition/epoch_8.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -115,5 +114,5 @@ def single_inference():
     print("time use", time.time() - s)
 
 
-batch_inference()
+single_inference()
 print("count ", count)
