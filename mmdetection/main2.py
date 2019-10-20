@@ -1,9 +1,9 @@
 import json
 import os
+import time
 
 import numpy as np
-from mmdet.apis import init_detector, inference_detector
-from collections import defaultdict
+from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
 
 def non_max_suppression_fast(boxes, scores, overlapThresh):
@@ -63,67 +63,62 @@ def non_max_suppression_fast(boxes, scores, overlapThresh):
     # integer data type
     return pick
 
-class Detector:
+def merge_result(predict1, predict2, file_path):
+    image_name = os.path.basename(file_path)
+    result = []
+    for i, (bboxes, bboxes2) in enumerate(zip(predict1, predict2), 1):
+        bboxes = np.reshape(bboxes, (-1, 5))
+        bboxes2 = np.reshape(bboxes2, (-1, 5))
+        if len(bboxes) > 0 and len(bboxes2) > 0:
+            defect_label = i
+
+            for bbox in bboxes:
+                x1, y1, x2, y2, score = bbox.tolist()
+                x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
+                result.append(
+                    {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
+    return result
+
+class MultiDetector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_se.py',
+            '/competition/mmdetection/myconfig/101/grid_rcnn_gn_head_x101_32x4d_fpn_2x.py',
+            '/competition/epoch_1.pth', device='cuda:0')
+        self.batch_model = init_detector(
+            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
             '/competition/epoch_2.pth', device='cuda:0')
 
-    def detect_single_img(self, file_path, template_path):
-        predict = inference_detector(self.model, [file_path, template_path])
+    def detect_batch_imgs(self, file_paths, batch_size):
         result = []
-        res = defaultdict(list)
-        for i, bboxes in enumerate(predict, 1):
-            rs = []
-            scores = []
-            boxes = []
-            labels = []
-            if len(bboxes) > 0:
-                defect_label = i
-                image_name = os.path.basename(file_path)
-                for bbox in bboxes:
-                    x1, y1, x2, y2, score = bbox.tolist()
-                    # x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
-                    scores.append(score)
-                    boxes.append([x1, y1, x2, y2])
-                    labels.append(defect_label)
-                    # rs.append(
-                    #     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-            if len(scores) > 0 and max(scores) > 0.05:
-                # if len(scores) == 1 and max(scores) < 0.05:
-                #     continue
-                # result += rs
-                res['box'] += boxes
-                res['score'] += scores
-                res['label'] += labels
-        return res
+        for j in range(0, len(file_paths), batch_size):
+            paths = file_paths[j:j + batch_size]
+            predicts = inference_detector_batch(self.batch_model, paths) if len(paths) > 1 \
+                else inference_detector(self.batch_model, paths[0])
+            for (file_path, template_path), predict in zip(paths, predicts):
+                pred2 = inference_detector(self.model, [file_path, template_path])
+                result += merge_result(predict, pred2, file_path)
+        return result
 
 
-root = '/tcdata/guangdong1_round2_testA_20190924'
-result = []
-detector = Detector()
+if __name__ == '__main__':
+    s = time.time()
+    root = '/tcdata/guangdong1_round2_testA_20190924'
+    result = []
+    detector = MultiDetector()
+    paths = []
+    for dir_name in os.listdir(root):
+        files = os.listdir(os.path.join(root, dir_name))
+        if files[0].startswith('template'):
+            files = [files[1], files[0]]
+        file = files[0]
+        template_file = files[1]
+        paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
-for dir_name in os.listdir(root):
-    files = os.listdir(os.path.join(root, dir_name))
-    if files[0].startswith('template'):
-        files = [files[1], files[0]]
-    file = files[0]
-    template_file = files[1]
-    tmp = []
-    res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-    boxes = np.array(res['box'])
-    scores = np.array(res['score'])
-    labels = np.array(res['label'])
-    pick = non_max_suppression_fast(boxes, scores, 0.8)
-    boxes = boxes[pick]
-    scores = scores[pick]
-    labels = labels[pick]
-    for box, score, label in zip(boxes, scores, labels):
-        x1, y1, x2, y2 = box
-        x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)
-        tmp.append(
-            {'name': file, 'category': int(label), 'bbox': [x1, y1, x2, y2], 'score': score})
-    result += tmp
+    # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
+    res = detector.detect_batch_imgs(paths, 10)
+    result += res
 
-with open('result.json', 'w') as fp:
-    json.dump(result, fp, indent=4, separators=(',', ': '))
+    with open('result.json', 'w') as fp:
+        json.dump(result, fp, indent=4, separators=(',', ': '))
+    print("time use", time.time() - s)
+

@@ -1,1 +1,1 @@
-python mmdetection/main.py
+python mmdetection/main3.py
