@@ -41,8 +41,8 @@ def get_result(predict, file_path):
                 # if score > score_map[i]:
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-    if len(scores) > 0 and max(scores) > 0.05:
-        if len(scores) == 1 and max(scores) < 0.1:
+    if len(scores) > 0 and max(scores) > 0.04:
+        if len(scores) == 1 and max(scores) < 0.07:
             return []
         return result
     else:
