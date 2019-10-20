@@ -91,10 +91,11 @@ def merge_result(predict1, predict2, file_path):
         bboxes2 = np.reshape(bboxes2, (-1, 5))
         if len(bboxes) > 0 and len(bboxes2) > 0:
             defect_label = i
-            pick = merge_results(bboxes[:, :4], bboxes2[:, :4]).tolist()
-            pick2 = np.where(bboxes[:, 4] > 0.2)[0].tolist()
-            pick = list(set(pick + pick2))
-            bboxes = bboxes[pick]
+            if i == 1 or i == 4:
+                pick = merge_results(bboxes[:, :4], bboxes2[:, :4]).tolist()
+                # pick2 = np.where(bboxes[:, 4] > 0.2)[0].tolist()
+                # pick = list(set(pick + pick2))
+                bboxes = bboxes[pick]
             for bbox in bboxes:
                 x1, y1, x2, y2, score = bbox.tolist()
                 x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
