@@ -114,5 +114,5 @@ def single_inference():
     print("time use", time.time() - s)
 
 
-single_inference()
+batch_inference()
 print("count ", count)
