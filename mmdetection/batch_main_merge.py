@@ -83,14 +83,71 @@ def merge_results(result1, result2, mode='inter'):
         return picks[0]
 
 
+# def merge_result(predict1, predict2, file_path):  # 1
+#     image_name = os.path.basename(file_path)
+#     # result = []
+#     scores = []
+#     defects = []
+#     for i, bboxes in enumerate(predict1, 1):
+#         bboxes = np.reshape(bboxes, (-1, 5))
+#         # bboxes2 = np.reshape(bboxes2, (-1, 5))
+#         if len(bboxes) > 0:
+#             defect_label = i
+#             # if i == 1 or i == 4:
+#             #     pick = merge_results(bboxes[:, :4], bboxes2[:, :4]).tolist()
+#             #     # pick2 = np.where(bboxes[:, 4] > 0.2)[0].tolist()
+#             #     # pick = list(set(pick + pick2))
+#             #     bboxes = bboxes[pick]
+#             for bbox in bboxes:
+#                 x1, y1, x2, y2, score = bbox.tolist()
+#                 # x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
+#                 scores.append(score)
+#                 defects.append(i)
+#
+#     if len(scores) > 0 and max(scores) > 0.05:
+#         if len(scores) == 1 and max(scores) < 0.1:
+#             return []
+#         result = []
+#         scores = []
+#         defects = []
+#         for i, bboxes in enumerate(predict2, 1):
+#             bboxes = np.reshape(bboxes, (-1, 5))
+#             # bboxes2 = np.reshape(bboxes2, (-1, 5))
+#             if len(bboxes) > 0:
+#                 defect_label = i
+#                 # if i == 1 or i == 4:
+#                 #     pick = merge_results(bboxes[:, :4], bboxes2[:, :4]).tolist()
+#                 #     # pick2 = np.where(bboxes[:, 4] > 0.2)[0].tolist()
+#                 #     # pick = list(set(pick + pick2))
+#                 #     bboxes = bboxes[pick]
+#                 for bbox in bboxes:
+#                     x1, y1, x2, y2, score = bbox.tolist()
+#                     x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
+#                     scores.append(score)
+#                     defects.append(i)
+#                     result.append(
+#                         {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
+#         # if len(scores) > 0 and max(scores) > 0.05:
+#         #     if len(scores) == 1 and max(scores) < 0.1:
+#         #         return []
+#         return result
+#         # else:
+#         #     return []
+#     else:
+#         return []
 def merge_result(predict1, predict2, file_path):
+    model1 = [4, 6, 9, 10, 11, 13]
     image_name = os.path.basename(file_path)
-    # result = []
+    result = []
     scores = []
     defects = []
-    for i, bboxes in enumerate(predict1, 1):
-        bboxes = np.reshape(bboxes, (-1, 5))
-        # bboxes2 = np.reshape(bboxes2, (-1, 5))
+    for i, (bboxes1, bboxes2) in enumerate(zip(predict1, predict2), 1):
+        bboxes1 = np.reshape(bboxes1, (-1, 5))
+        bboxes2 = np.reshape(bboxes2, (-1, 5))
+        if i in model1:
+            bboxes = bboxes1
+        else:
+            bboxes = bboxes2
         if len(bboxes) > 0:
             defect_label = i
             # if i == 1 or i == 4:
@@ -103,39 +160,15 @@ def merge_result(predict1, predict2, file_path):
                 # x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
                 scores.append(score)
                 defects.append(i)
+                result.append(
+                    {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
 
     if len(scores) > 0 and max(scores) > 0.05:
         if len(scores) == 1 and max(scores) < 0.1:
             return []
-        result = []
-        scores = []
-        defects = []
-        for i, bboxes in enumerate(predict2, 1):
-            bboxes = np.reshape(bboxes, (-1, 5))
-            # bboxes2 = np.reshape(bboxes2, (-1, 5))
-            if len(bboxes) > 0:
-                defect_label = i
-                # if i == 1 or i == 4:
-                #     pick = merge_results(bboxes[:, :4], bboxes2[:, :4]).tolist()
-                #     # pick2 = np.where(bboxes[:, 4] > 0.2)[0].tolist()
-                #     # pick = list(set(pick + pick2))
-                #     bboxes = bboxes[pick]
-                for bbox in bboxes:
-                    x1, y1, x2, y2, score = bbox.tolist()
-                    x1, y1, x2, y2 = round(x1, 2), round(y1, 2), round(x2, 2), round(y2, 2)  # save 0.00
-                    scores.append(score)
-                    defects.append(i)
-                    result.append(
-                        {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-        # if len(scores) > 0 and max(scores) > 0.05:
-        #     if len(scores) == 1 and max(scores) < 0.1:
-        #         return []
         return result
-        # else:
-        #     return []
     else:
         return []
-
 
 
 class MultiDetector:
