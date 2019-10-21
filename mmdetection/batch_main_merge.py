@@ -85,7 +85,7 @@ def merge_results(result1, result2, mode='inter'):
 
 def merge_result(predict1, predict2, file_path):
     image_name = os.path.basename(file_path)
-    result = []
+    # result = []
     scores = []
     defects = []
     for i, bboxes in enumerate(predict1, 1):
@@ -127,10 +127,16 @@ def merge_result(predict1, predict2, file_path):
                     defects.append(i)
                     result.append(
                         {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
+        # if len(scores) > 0 and max(scores) > 0.05:
+        #     if len(scores) == 1 and max(scores) < 0.1:
+        #         return []
+        return result
+        # else:
+        #     return []
     else:
         return []
 
-    return result
+
 
 class MultiDetector:
     def __init__(self):
