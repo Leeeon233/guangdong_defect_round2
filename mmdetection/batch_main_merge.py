@@ -175,10 +175,10 @@ class MultiDetector:
     def __init__(self):
         self.batch_model = init_detector(
             '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
-            '/competition/epoch_2.pth', device='cuda:0')
+            '/competition/model_blur.pth', device='cuda:0')
         self.model2 = init_detector(
             '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_libra_blur.py',
-            '/competition/epoch_1.pth', device='cuda:0')
+            '/competition/model_abs.pth', device='cuda:0')
 
 
     def detect_batch_imgs(self, file_paths, batch_size):
