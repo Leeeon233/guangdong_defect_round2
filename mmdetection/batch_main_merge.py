@@ -2,6 +2,8 @@ import json
 import os
 import time
 import numpy as np
+from torch.utils.data import Dataset, DataLoader
+import mmcv
 
 from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
@@ -135,8 +137,10 @@ def merge_results(result1, result2, mode='inter'):
 #         #     return []
 #     else:
 #         return []
+
 def merge_result(predict1, predict2, file_path):
-    model1 = [4, 6, 9, 10, 11, 13]
+    # model1 = [4, 6, 9, 10, 11, 13]
+    model1 = [2, 3, 7, 9, 11, 13]
     image_name = os.path.basename(file_path)
     result = []
     scores = []
@@ -194,6 +198,26 @@ class MultiDetector:
                 result += merge_result(predict, predict2, file_path)
         return result
 
+
+
+# class MyDataset(Dataset):
+#     def __init__(self):
+#         root = '/tcdata/guangdong1_round2_testA_20190924'
+#         self.paths = []
+#         for dir_name in os.listdir(root):
+#             files = os.listdir(os.path.join(root, dir_name))
+#             if files[0].startswith('template'):
+#                 files = [files[1], files[0]]
+#             file = files[0]
+#             template_file = files[1]
+#             self.paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
+#
+#     def __getitem__(self, index):
+#         path = self.paths[index]
+#         return [mmcv.imread(path[0]), mmcv.imread(path[1])]
+#
+#     def __len__(self):
+#         return len(self.paths)
 
 if __name__ == '__main__':
     s = time.time()
