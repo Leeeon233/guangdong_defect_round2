@@ -1,1 +1,1 @@
-python mmdetection/main.py
+python mmdetection/batch_main_merge.py
