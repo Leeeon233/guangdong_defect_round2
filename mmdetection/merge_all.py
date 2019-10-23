@@ -261,7 +261,7 @@ class MultiDetector:
             paths = file_paths[j:j + batch_size]
             imgs = []
             for p, t in paths:
-                imgs.append([cv2.imread(p, 'color'), cv2.imread(t, 'color')])
+                imgs.append([cv2.imread(p), cv2.imread(t)])
             predicts1 = inference_detector_batch(self.acc_model, imgs) if len(imgs) > 1 \
                 else inference_detector(self.acc_model, imgs[0])
             predicts2 = inference_detector_batch(self.batch_model, imgs) if len(imgs) > 1 \
