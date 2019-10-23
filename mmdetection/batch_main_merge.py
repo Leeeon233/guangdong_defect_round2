@@ -139,7 +139,7 @@ def merge_results(result1, result2, mode='inter'):
 #         return []
 
 def merge_result(predict1, predict2, file_path):
-    model1 = [4, 6, 9, 10, 11, 13]
+    model1 = [2,  6, 9, 10, 11, 13]
     # model1 = [2, 3, 7, 9, 11, 13]
     image_name = os.path.basename(file_path)
     result = []
