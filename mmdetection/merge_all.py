@@ -308,7 +308,7 @@ if __name__ == '__main__':
         paths.append([os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file)])
 
     # res = detector.detect_single_img(os.path.join(root, dir_name, file), os.path.join(root, dir_name, template_file))
-    res = detector.detect_batch_imgs(paths, 10)
+    res = detector.detect_batch_imgs(paths, 5)
     result += res
 
     with open('result.json', 'w') as fp:
