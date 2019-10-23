@@ -138,7 +138,11 @@ def merge_results(result1, result2, mode='inter'):
 #     else:
 #         return []
 
+from collections import defaultdict
+counter=defaultdict(int)
+
 def merge_result(predict1, predict2, file_path):
+    global counter
     model1 = [2,  6, 9, 10, 11, 13]
     # model1 = [2, 3, 7, 9, 11, 13]
     image_name = os.path.basename(file_path)
@@ -168,6 +172,8 @@ def merge_result(predict1, predict2, file_path):
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
 
     if len(scores) > 0 and max(scores) > 0.05:
+        for d in defects:
+            counter[d] += 1
         # if len(scores) == 1 and max(scores) < 0.1:
         #     return []
         return result
@@ -240,3 +246,4 @@ if __name__ == '__main__':
     with open('result.json', 'w') as fp:
         json.dump(result, fp, indent=4, separators=(',', ': '))
     print("time use", time.time() - s)
+    print("\n", counter)
