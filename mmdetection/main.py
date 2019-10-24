@@ -21,7 +21,7 @@ def get_result(predict, file_path):
                 # if score > score_map[i]:
                 result.append(
                     {'name': image_name, 'category': defect_label, 'bbox': [x1, y1, x2, y2], 'score': score})
-    if len(scores) > 0 and max(scores) > 0.05:
+    if len(scores) > 0 and max(scores) > 0.03:
         if len(scores) == 1 and max(scores) < 0.1:
             return []
         return result
@@ -32,9 +32,9 @@ def get_result(predict, file_path):
 class Detector:
     def __init__(self):
         self.model = init_detector(
-            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_libra_blur.py',
-            # '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
-            '/competition/model_abs.pth', device='cuda:0')
+            # '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_libra_blur.py',
+            '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
+            '/competition/model_blur.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
