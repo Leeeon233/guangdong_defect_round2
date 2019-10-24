@@ -143,7 +143,7 @@ counter=defaultdict(int)
 
 def merge_result(predict1, predict2, file_path):
     global counter
-    model1 = [2,  6, 9, 10, 11, 13]
+    model1 = [4, 6, 9, 10, 11, 13]
     # model1 = [2, 3, 7, 9, 11, 13]
     image_name = os.path.basename(file_path)
     result = []
@@ -227,7 +227,7 @@ class MultiDetector:
 
 if __name__ == '__main__':
     s = time.time()
-    root = '/tcdata/guangdong1_round2_testA_20190924'
+    root = '/tcdata/guangdong1_round2_testB_20191024'
     result = []
     detector = MultiDetector()
     paths = []
