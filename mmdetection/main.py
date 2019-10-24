@@ -4,28 +4,8 @@ import time
 
 from mmdet.apis import init_detector, inference_detector, inference_detector_batch
 
-count = 0
-
 
 def get_result(predict, file_path):
-    global count
-    # score_map = {
-    #     1: 0.33,
-    #     2: 0,
-    #     3: 0.2,
-    #     4: 0.4,
-    #     5: 0.7,
-    #     6: 0.5,
-    #     7: 0.3,
-    #     8: 0.2,
-    #     9: 0.1,
-    #     10: 0.14,
-    #     11: 0.1,
-    #     12: 0.05,
-    #     13: 0.15,
-    #     14: 0.001,
-    #     15: 0.005
-    # }
     result = []
     scores = []
     defects = []
@@ -54,7 +34,7 @@ class Detector:
         self.model = init_detector(
             '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_libra_blur.py',
             # '/competition/mmdetection/myconfig/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_round2_aug_blur.py',
-            '/competition/epoch_2.pth', device='cuda:0')
+            '/competition/model_abs.pth', device='cuda:0')
 
     def detect_single_img(self, file_path, template_path):
         predict = inference_detector(self.model, [file_path, template_path])
@@ -74,7 +54,7 @@ class Detector:
 
 def batch_inference():
     s = time.time()
-    root = '/tcdata/guangdong1_round2_testA_20190924'
+    root = '/tcdata/guangdong1_round2_testB_20191024'
     result = []
     detector = Detector()
     paths = []
@@ -97,7 +77,7 @@ def batch_inference():
 
 def single_inference():
     s = time.time()
-    root = '/tcdata/guangdong1_round2_testA_20190924'
+    root = '/tcdata/guangdong1_round2_testB_20191024'
     result = []
     detector = Detector()
     for dir_name in os.listdir(root):
@@ -115,4 +95,3 @@ def single_inference():
 
 
 batch_inference()
-print("count ", count)
