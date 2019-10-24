@@ -295,7 +295,7 @@ class MultiDetector:
 
 if __name__ == '__main__':
     s = time.time()
-    root = '/tcdata/guangdong1_round2_testA_20190924'
+    root = '/tcdata/guangdong1_round2_testB_20191024'
     result = []
     detector = MultiDetector()
     paths = []
